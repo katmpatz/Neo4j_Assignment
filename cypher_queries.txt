@@ -1,8 +1,8 @@
-Πριν να εισάγουμε τα δεδομένα στο Neo4j κρατήσαμε από το αρχείο με τα στοιχεία του προφιλ μέσω python(networks.py) μόνο τις 3 στήλες  
-που περιείχαν πληροφορία η οποία χρησιμοποιείται στα ερωτήματα, δηλαδή το id, την ηλικία και το φύλλο. Έπειτα μετατρέψαμε τα αρχεία
-από .txt σε .csv και τα εισάγαμε στο neo4j χρησιμοποιώντας τις ακόλουθες εντολές:
+Before importing data into Neo4j, we kept only the 3 columns(user_id, age, gender) 
+from the soc-pokec-profiles.txt file using python(networks.py). 
+Then we converted the files from .txt to .csv and we imported them to neo4j using the following commands:
 
--Για τη δημιουργία των κόμβων
+-Creation of nodes
 
 USING PERIODIC COMMIT
 LOAD CSV WITH HEADERS FROM "file:///profiles.csv" AS row
@@ -10,7 +10,7 @@ FIELDTERMINATOR ';'
 CREATE (:Profile {userId: toInteger(row.user), age: toInteger(row.age), gender: row.gender})
 
 
--Για τη δημιουργία των σχέσεων
+-Creation of relationships
 
 USING PERIODIC COMMIT
 LOAD CSV WITH HEADERS FROM "file:///relationships.csv" AS row
@@ -20,12 +20,12 @@ MATCH (p2:Profile {userId: toInteger(row.friend) })
 CREATE (p1)-[:FRIENDS_WITH]->(p2);
 
 
--Έπειτα δημιουργήσαμε ένα index ώστε να αυξήσουμε την αποδοτικότητα:
+-Then we created an index in order to increase efficient
 
 CREATE INDEX ON :Profile(userId)
 
 
--Στη συνέχεια τρέξαμε τα ακόλουθα queries. Υπάρχουν screenshots με τα αποτελέσματα στον φάκελο neo4j ενώ η διάρκεια αναγράφεται στο τέλος κάθε ερωτήματος.
+-We ran the following queries. There are screenshots with the results in neo4j folder.
 
 
 1.For each user, count his/her friends
