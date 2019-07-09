@@ -1,0 +1,68 @@
+Πριν να εισάγουμε τα δεδομένα στο Neo4j κρατήσαμε από το αρχείο με τα στοιχεία του προφιλ μέσω python(networks.py) μόνο τις 3 στήλες  
+που περιείχαν πληροφορία η οποία χρησιμοποιείται στα ερωτήματα, δηλαδή το id, την ηλικία και το φύλλο. Έπειτα μετατρέψαμε τα αρχεία
+από .txt σε .csv και τα εισάγαμε στο neo4j χρησιμοποιώντας τις ακόλουθες εντολές:
+
+-Για τη δημιουργία των κόμβων
+
+USING PERIODIC COMMIT
+LOAD CSV WITH HEADERS FROM "file:///profiles.csv" AS row
+FIELDTERMINATOR ';'
+CREATE (:Profile {userId: toInteger(row.user), age: toInteger(row.age), gender: row.gender})
+
+
+-Για τη δημιουργία των σχέσεων
+
+USING PERIODIC COMMIT
+LOAD CSV WITH HEADERS FROM "file:///relationships.csv" AS row
+FIELDTERMINATOR ';'
+MATCH (p1:Profile {userId: toInteger(row.user) })
+MATCH (p2:Profile {userId: toInteger(row.friend) })
+CREATE (p1)-[:FRIENDS_WITH]->(p2);
+
+
+-Έπειτα δημιουργήσαμε ένα index ώστε να αυξήσουμε την αποδοτικότητα:
+
+CREATE INDEX ON :Profile(userId)
+
+
+-Στη συνέχεια τρέξαμε τα ακόλουθα queries. Υπάρχουν screenshots με τα αποτελέσματα στον φάκελο neo4j ενώ η διάρκεια αναγράφεται στο τέλος κάθε ερωτήματος.
+
+
+1.For each user, count his/her friends
+
+MATCH (p: Profile)-[:FRIENDS_WITH]->(f: Profile)
+RETURN p.userId, count(f.userId) AS friend
+
+Duration: Started streaming 1432693 records after 4 ms and completed after 69132 ms
+
+
+
+2.For each user, count his/her friends of friends
+
+MATCH (p:Profile)-->(friend:Profile)-->(friend_of_friend:Profile)
+RETURN p.userId, count(friend_of_friend.userId)
+
+Duration: Started streaming 1421423 records in less than 1 ms and completed after 1485099 ms
+
+
+
+3.For each user, count his/her friends that are over 30
+
+MATCH (p: Profile)-[:FRIENDS_WITH]->(f: Profile)
+WHERE f.age > 30
+RETURN p.userId, count(f.userId) AS friend
+
+Duration: Started streaming 607359 records after 7758 ms and completed after 8161 ms
+
+
+
+4.For each male user, count how many male and female friends he is having 
+
+MATCH (p: Profile)-[:FRIENDS_WITH]->(f: Profile)
+where p.gender = "1" and f.gender <> "-1"
+RETURN p.userId, sum(toInteger(f.gender)) AS male, count(f.userId)-sum(toInteger(f.gender)) AS female
+
+Duration: Started streaming 715978 records after 46334 ms and completed after 49331 ms
+
+
+
